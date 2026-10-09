@@ -22,6 +22,13 @@ export default function Files() {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; fileId: string } | null>(null);
   const [uploadProgress, setUploadProgress] = useState<{ name: string; progress: number; done: boolean }[]>([]);
 
+  // Close context menu on outside click
+  React.useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
+
   if (!user) return null;
 
   const userFolders = data.folders.filter(f => f.ownerId === user.id && f.parentId === currentFolder);

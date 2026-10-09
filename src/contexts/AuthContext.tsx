@@ -21,8 +21,20 @@ const MOCK_PASSWORDS: Record<string, string> = {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
-    const stored = localStorage.getItem('staffdrive_user');
-    return stored ? JSON.parse(stored) : null;
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const stored = localStorage.getItem('staffdrive_user');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && parsed.id && parsed.email) {
+            return parsed;
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load user:', e);
+    }
+    return null;
   });
 
   const login = useCallback((email: string, password: string) => {
@@ -46,7 +58,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveData(data);
     
     setUser(foundUser);
-    localStorage.setItem('staffdrive_user', JSON.stringify(foundUser));
+    try {
+      localStorage.setItem('staffdrive_user', JSON.stringify(foundUser));
+    } catch (e) {
+      console.error('Failed to save user:', e);
+    }
 
     if (foundUser.mustChangePassword) {
       return { success: true, message: 'Login successful', mustChangePassword: true };
@@ -57,7 +73,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     setUser(null);
-    localStorage.removeItem('staffdrive_user');
+    try {
+      localStorage.removeItem('staffdrive_user');
+    } catch (e) {
+      console.error('Failed to remove user:', e);
+    }
   }, []);
 
   const changePassword = useCallback((oldPassword: string, newPassword: string) => {
@@ -81,7 +101,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const updatedUser = { ...foundUser, mustChangePassword: false };
     setUser(updatedUser);
-    localStorage.setItem('staffdrive_user', JSON.stringify(updatedUser));
+    try {
+      localStorage.setItem('staffdrive_user', JSON.stringify(updatedUser));
+    } catch (e) {
+      console.error('Failed to save user:', e);
+    }
 
     return { success: true, message: 'Password changed successfully' };
   }, [user]);

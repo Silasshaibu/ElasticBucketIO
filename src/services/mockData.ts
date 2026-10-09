@@ -13,7 +13,14 @@ interface DataStore {
 }
 
 function generateId(): string {
-  return crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+  try {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+  } catch (e) {
+    // fallback
+  }
+  return Math.random().toString(36).substring(2, 11) + Date.now().toString(36);
 }
 
 function getInitialData(): DataStore {
@@ -241,21 +248,33 @@ function getInitialData(): DataStore {
 
 export function loadData(): DataStore {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      return JSON.parse(stored);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        // Validate the parsed data has required fields
+        if (parsed && parsed.users && parsed.backends && parsed.files) {
+          return parsed;
+        }
+      }
     }
   } catch (e) {
     console.error('Failed to load data:', e);
   }
   const initial = getInitialData();
-  saveData(initial);
+  try {
+    saveData(initial);
+  } catch (e) {
+    console.error('Failed to save initial data:', e);
+  }
   return initial;
 }
 
 export function saveData(data: DataStore): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
   } catch (e) {
     console.error('Failed to save data:', e);
   }
